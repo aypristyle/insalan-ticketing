@@ -3,26 +3,64 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:http/http.dart' as http;
 
 void main() => runApp(const MaterialApp(home: MyHome()));
 
-class MyHome extends StatelessWidget {
+class MyHome extends StatefulWidget {
   const MyHome({Key? key}) : super(key: key);
 
+  @override
+  State<StatefulWidget> createState() => _MyHomeState();
+
+}
+class _MyHomeState extends State<MyHome> {
+  final loginController = TextEditingController();
+  final mdpController = TextEditingController();
+  @override
+  void dispose() {
+    // Clean up the controller when the widget is disposed.
+    loginController.dispose();
+    mdpController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Ticketing Insalan')),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).push(MaterialPageRoute(
-              builder: (context) => const QRViewExample(),
-            ));
-          },
-          child: const Text('qrView'),
-        ),
+      body: Column(
+        children: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                print(loginController.text);
+                print(mdpController.text);
+                var url = Uri.parse('https://www.insalan.fr/ticket/login_check');
+                var response = await http.post(url, body: {'login':loginController.text,'password':mdpController.text});
+                print('Response status: ${response.statusCode}');
+                print('Response body: ${response.body}');
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => const QRViewExample(),
+                ));
+              },
+              child: const Text('qrView'),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: loginController,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: mdpController,
+            ),
+          ),
+        ],
       ),
+
     );
   }
 }
@@ -163,14 +201,21 @@ class _QRViewExampleState extends State<QRViewExample> {
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) {
+  void  _onQRViewCreated(QRViewController controller) {
     setState(() {
       this.controller = controller;
     });
-    controller.scannedDataStream.listen((scanData) {
+    controller.scannedDataStream.listen((scanData) async {
       setState(() {
         result = scanData;
       });
+      if (result != null){
+        var url = Uri.parse('https://www.insalan.fr/ticket/get');
+        var response = await http.post(url, body: {'token': "638610ef05c008c65ade01ea83c41b1db60f234d"});
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+      print(result!.code);
     });
   }
 
