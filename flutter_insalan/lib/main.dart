@@ -30,32 +30,46 @@ class _MyHomeState extends State<MyHome> {
       appBar: AppBar(title: const Text('Ticketing Insalan')),
       body: Column(
         children: [
-          Center(
-            child: ElevatedButton(
-              onPressed: () async {
-                print(loginController.text);
-                print(mdpController.text);
-                var url = Uri.parse('https://www.insalan.fr/ticket/login_check');
-                var response = await http.post(url, body: {'login':loginController.text,'password':mdpController.text});
-                print('Response status: ${response.statusCode}');
-                print('Response body: ${response.body}');
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const QRViewExample(),
-                ));
-              },
-              child: const Text('qrView'),
-            ),
-          ),
+
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: loginController,
+              decoration: InputDecoration(
+                  labelText: "Login",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  )
+              ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: mdpController,
+              decoration: InputDecoration(
+                  labelText: "Password",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  )
+              ),
+            ),
+          ),
+          Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                print(loginController.text);
+                print(mdpController.text);
+                var url = Uri.parse('https://www.insalan.fr/login');
+                var response = await http.post(url, body: {'login':loginController.text,'password':mdpController.text});
+                print('Response status: ${response.statusCode}');
+                print('Response body: ${response.body}');
+                print('Response header: ${response.headers}');
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => const QRViewExample(),
+                ));
+              },
+              child: const Text('qrView'),
             ),
           ),
         ],
@@ -74,6 +88,7 @@ class QRViewExample extends StatefulWidget {
 
 class _QRViewExampleState extends State<QRViewExample> {
   Barcode? result;
+  MaterialColor color=Colors.red;
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
 
@@ -184,17 +199,17 @@ class _QRViewExampleState extends State<QRViewExample> {
     // For this example we check how width or tall the device is and change the scanArea and overlay accordingly.
     var scanArea = (MediaQuery.of(context).size.width < 400 ||
         MediaQuery.of(context).size.height < 400)
-        ? 150.0
-        : 300.0;
+        ? 200.0
+        : 400.0;
     // To ensure the Scanner view is properly sizes after rotation
     // we need to listen for Flutter SizeChanged notification and update controller
     return QRView(
       key: qrKey,
       onQRViewCreated: _onQRViewCreated,
       overlay: QrScannerOverlayShape(
-          borderColor: Colors.red,
+          borderColor: this.color,
           borderRadius: 10,
-          borderLength: 30,
+          borderLength: 50,
           borderWidth: 10,
           cutOutSize: scanArea),
       onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
@@ -209,11 +224,15 @@ class _QRViewExampleState extends State<QRViewExample> {
       setState(() {
         result = scanData;
       });
-      if (result != null){
+      if (result != null) {
+        this.color = Colors.green;
         var url = Uri.parse('https://www.insalan.fr/ticket/get');
-        var response = await http.post(url, body: {'token': "638610ef05c008c65ade01ea83c41b1db60f234d"});
+        var response = await http.post(
+            url, body: {'token': result!.code});
         print('Response status: ${response.statusCode}');
         print('Response body: ${response.body}');
+      }else{
+        this.color=Colors.red;
       }
       print(result!.code);
     });
